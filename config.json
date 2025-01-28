@@ -1,0 +1,46 @@
+{
+    "project_name": "Poly2Vec",
+    "dataset_name": "NewYork",
+    "dataset": "NewYork_Polygons-Polylines",
+    "dataset_type1": "polygons",
+    "dataset_type2": "polygons",
+    "task": "relation-prediction",
+    "num_classes": 2,
+    "data_path": "/home/jiali/Poly2Vec/data/NewYork/",
+    "data_file": "polygon_polygon_intersect_data.pt",
+    "save_dir": "./results/",
+    "training": true,
+
+    "encoder_type": "poly2vec",
+
+    "batch_size": 128,
+    "lr": 1e-4,
+    "wd": 1e-8,
+    "dropout": 0.2,
+    "d_input": 210,
+    "d_hid": 100,
+    "d_out": 32,
+
+    "fusion": "learned_fusion",
+
+    "sampling_strategy": "gfm",
+
+    "gfm_params": {
+        "w_min": 0.1,
+        "w_max": 1.0,
+        "n_freqs": 10
+    },
+
+    "learned_f_params": {
+        "min_freq": -1.0,
+        "max_freq": 1.0,
+        "n_freqs": 210
+    },
+
+    "device": "cuda",
+    "use_wandb": false,
+
+    "epochs": 20,
+
+    "patience": 10
+}

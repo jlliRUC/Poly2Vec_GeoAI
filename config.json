@@ -6,8 +6,8 @@
     "dataset_type2": "polygons",
     "task": "relation-prediction",
     "num_classes": 2,
-    "data_path": "/home/jiali/Poly2Vec/data/NewYork/",
-    "data_file": "polygon_polygon_intersect_data.pt",
+    "data_path": ".//Poly2Vec/data/NewYork/",
+    "data_file": "polygon_polygon_topological_gitrelationship_data.pt",
     "save_dir": "./results/",
     "training": true,
 

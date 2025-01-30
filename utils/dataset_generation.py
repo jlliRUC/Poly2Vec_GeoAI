@@ -327,75 +327,6 @@ def pairwise_topological_relationship(dataset_name, geometry_type1, geometry_typ
                      "wb"))
 
 
-def check_directional_relationship(geom1, geom2):
-    # Check if geometries are disjoint
-    # Get centroids of both geometries
-    geom1_centroid = geom1.centroid
-    geom2_centroid = geom2.centroid
-
-    # Calculate relative differences
-    dx = geom2_centroid.x - geom1_centroid.x
-    dy = geom2_centroid.y - geom1_centroid.y
-
-    # Determine the directional relationship
-    if dy > 0 and abs(dx) < abs(dy):
-        return "north"
-    elif dy < 0 and abs(dx) < abs(dy):
-        return "south"
-    elif dx > 0 and abs(dy) < abs(dx):
-        return "east"
-    elif dx < 0 and abs(dy) < abs(dx):
-        return "west"
-
-def pairwise_directional_relationship(dataset_name, geometry_type1, geometry_type2, relationship_list, num_pairs=5000):
-    geometries1, lengths1, num_geometries1 = load_dataset(dataset_name, geometry_type1)
-    geometries2, lengths2, num_geometries2 = load_dataset(dataset_name, geometry_type2)
-    print(
-        f"Find {num_pairs} of fundamental direction pairs from {num_geometries1} {geometry_type1} and {num_geometries2} {geometry_type2}.")
-
-    result_pairs = []
-    result_geom1_coords = []
-    result_geom2_coords = []
-    result_lengths1 = []
-    result_lengths2 = []
-    for relationship in relationship_list:
-        print(relationship)
-        pairs_indices = []
-        temp_geom1_coords = []
-        temp_geom2_coords = []
-        temp_lengths1 = []
-        temp_lengths2 = []
-        while len(pairs_indices) < num_pairs:
-            idx1 = random.randint(0, min(num_pairs, num_geometries1) - 1)
-            idx2 = random.randint(0, min(num_pairs, num_geometries2) - 1)
-            geom1 = list2shapely(geometries1[idx1], lengths1[idx1], geometry_type1)
-            geom2 = list2shapely(geometries2[idx2], lengths2[idx2], geometry_type2)
-            # if check_directional_relationship(geom1, geom2) == relationship and [idx1, idx2] not in pairs_indices:
-            if check_directional_relationship(geom1, geom2) == relationship and [idx1, idx2] not in pairs_indices:
-                pairs_indices.append([idx1, idx2])
-                #print(f"Added {len(pairs_indices)} {relationship} pairs.")
-                temp_geom1_coords.append(torch.tensor(geometries1[idx1], dtype=torch.float32))
-                temp_geom2_coords.append(torch.tensor(geometries2[idx2], dtype=torch.float32))
-                temp_lengths1.append(lengths1[idx1])
-                temp_lengths2.append(lengths2[idx2])
-        result_pairs.extend(pairs_indices)
-        result_geom1_coords.append(torch.stack(temp_geom1_coords))
-        result_geom2_coords.append(torch.stack(temp_geom2_coords))
-        result_lengths1.append(torch.tensor(temp_lengths1))
-        result_lengths2.append(torch.tensor(temp_lengths2))
-
-    X_geom1 = torch.cat(result_geom1_coords, dim=0)
-    X_geom1_lengths = torch.cat(result_lengths1, dim=0)
-    X_geom2 = torch.cat(result_geom2_coords, dim=0)
-    X_geom2_lengths = torch.cat(result_lengths2, dim=0)
-
-    Y = torch.cat([torch.tensor([i] * num_pairs, dtype=torch.float32) for i in range(len(relationship_list))], dim=0)
-    torch.save((X_geom1, X_geom2, X_geom1_lengths, X_geom2_lengths, Y),
-               f"{root_dir}/{dataset_name}/{geometry_type1}_{geometry_type2}_directional_relationship_data.pt")
-    pickle.dump(result_pairs,
-                open(f"{root_dir}/{dataset_name}/{geometry_type1}_{geometry_type2}_directional_relationship_index.pkl",
-                     "wb"))
-
 
 def check_directional_relationship_360(geom1, geom2):
     geom1_centroid = geom1.centroid
@@ -496,78 +427,25 @@ def pairwise_distance(dataset_name, geometry_type1, geometry_type2, num_pairs=10
                 open(f"{root_dir}/{dataset_name}/{geometry_type1}_{geometry_type2}_dis_index.pt", "wb"))
 
 
-def subset_sampling1(dataset_name):
-    # Extract binary topological relationship ("disjoint", "intersect") from the whole polygon-polygon dataset.
-    X_geom1, X_geom2, X_geom1_lengths, X_geom2_lengths, Y = torch.load(
-        f"{root_dir}/{dataset_name}/polygon_polygon_topological_relationship_data.pt")
-
-    selected_indices = torch.cat([torch.arange(5000), torch.randint(5000, 20000, (5000,))])
-
-    X_geom1_binary = X_geom1[selected_indices]
-    X_geom2_binary = X_geom2[selected_indices]
-    X_geom1_lengths_binary = X_geom1_lengths[selected_indices]
-    X_geom2_lengths_binary = X_geom2_lengths[selected_indices]
-    Y_binary = Y[selected_indices]
-    Y_binary = (Y_binary > 0).long()
-
-    torch.save((X_geom1_binary, X_geom2_binary, X_geom1_lengths_binary, X_geom2_lengths_binary, Y_binary),
-               f"{root_dir}/{dataset_name}/polygon_polygon_intersect_data.pt")
-    pairs_indices = pickle.load(
-        open(f"{root_dir}/{dataset_name}/polygon_polygon_topological_relationship_index.pkl", "rb"))
-    pairs_indices_binary = [pairs_indices[i] for i in selected_indices]
-    pickle.dump(pairs_indices_binary,
-                open(f"{root_dir}/{dataset_name}/polygon_polygon_intersect_index.pkl", "wb"))
-
-def subset_sampling2(dataset_name):
-    # Extract binary topological relationship ("disjoint", "intersect") from the whole polygon-polyline dataset.
-    X_geom1, X_geom2, X_geom1_lengths, X_geom2_lengths, Y = torch.load(
-        f"{root_dir}/{dataset_name}/polygon_polyline_topological_relationship_data.pt")
-
-    selected_indices = torch.cat([torch.arange(5000), torch.randint(5000, 20000, (5000,))])
-
-    X_geom1_binary = X_geom1[selected_indices]
-    X_geom2_binary = X_geom2[selected_indices]
-    X_geom1_lengths_binary = X_geom1_lengths[selected_indices]
-    X_geom2_lengths_binary = X_geom2_lengths[selected_indices]
-    Y_binary = Y[selected_indices]
-    Y_binary = (Y_binary > 0).long()
-
-    torch.save((X_geom1_binary, X_geom2_binary, X_geom1_lengths_binary, X_geom2_lengths_binary, Y_binary),
-               f"{root_dir}/{dataset_name}/polygon_polyline_intersect_data.pt")
-    pairs_indices = pickle.load(
-        open(f"{root_dir}/{dataset_name}/polygon_polygon_topological_relationship_index.pkl", "rb"))
-    pairs_indices_binary = [pairs_indices[i] for i in selected_indices]
-    pickle.dump(pairs_indices_binary,
-                open(f"{root_dir}/{dataset_name}/polygon_polyline_intersect_index.pkl", "wb"))
-
-
-root_dir = "/home/jiali/Poly2Vec/data"
+root_dir = "./Poly2Vec/data"
 if __name__ == "__main__":
-
     for dataset_name in ["Singapore", "NewYork"]:
         print(dataset_name)
         # Topological
-        """
         print("Topological relationship")
         for geometry_type1, geometry_type2, relationship_list in [["polygon", "polygon", ["disjoint", "touch", "overlap", "contain", "within", "equal"]],
                                                                   ["polygon", "polyline", ["disjoint", "touch", "intersect", "contain"]]]:
             print(geometry_type1, geometry_type2)
             pairwise_topological_relationship(dataset_name, geometry_type1, geometry_type2, relationship_list=relationship_list, num_pairs=5000, max_attempts=10)
-        """
-        subset_sampling1(dataset_name)
-        subset_sampling2(dataset_name)
-        """
         for geometry_type1, geometry_type2, relationship in [["polygon", "point", "contain"], ["polyline", "polyline", "intersect"], ["polyline", "point", "contain"]]:
             print(geometry_type1, geometry_type2)
             pairwise_relationship(dataset_name, geometry_type1, geometry_type2, relationship)
         # Directional
         print("Directional relationship")
         for geometry_type1, geometry_type2 in [["polygon", "polygon"], ["polygon", "polyline"], ["polygon", "point"], ["polyline", "polyline"], ["polyline", "point"], ["point", "point"]]:
-            pairwise_directional_relationship(dataset_name, geometry_type1, geometry_type2, ["north", "south", "east", "west"], num_pairs=5000)
             pairwise_directional_relationship_360(dataset_name, geometry_type1, geometry_type2, [str(i) for i in range(16)], num_pairs=5000)
         # Distance
         print("Distance relationship")
         for geometry_type1, geometry_type2 in [["point", "point"], ["point", "polyline"], ["point", "polygon"]]:
             pairwise_distance(dataset_name, geometry_type1, geometry_type2, num_pairs=10000)
-        """
 
